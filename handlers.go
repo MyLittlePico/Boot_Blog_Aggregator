@@ -111,7 +111,15 @@ func handlerAddFeed(s *state, cmd command) error {
 	}
 
 	fmt.Printf("%+v\n", feed)
-	return nil
+
+	_, err = s.db.CreateFeedFollow(ctx,database.CreateFeedFollowParams{
+		ID        : uuid.New(),
+		CreatedAt : time.Now(),
+		UpdatedAt : time.Now(),
+		UserID    : user.ID,
+		FeedID    : feed.ID,
+		})
+	return err
 }
 
 func handlerGetFeedsInfo(s *state, cmd command) error {
@@ -124,5 +132,41 @@ func handlerGetFeedsInfo(s *state, cmd command) error {
 		fmt.Printf("-%s\n  -%s\n    -%s\n",feed.Name, feed.Url, feed.UserName.String)
 	}
 	
+	return nil
+}
+
+func handlerFollow(s *state, cmd command) error {
+	ctx := context.Background()
+	if len(cmd.args) != 1 {
+		return fmt.Errorf("Wrong number of arguments")
+	}
+	user, err := s.db.GetUser(ctx, s.cfg.CurrentUserName)
+	if err != nil {
+		return err
+	}
+	feed, err := s.db.GetFeed(ctx, cmd.args[0])
+	if err != nil {
+		return err
+	}
+
+	feedFollow, err := s.db.CreateFeedFollow(ctx,database.CreateFeedFollowParams{
+		ID        : uuid.New(),
+		CreatedAt : time.Now(),
+		UpdatedAt : time.Now(),
+		UserID    : user.ID,
+		FeedID    : feed.ID,
+		})
+	fmt.Printf("%+v\n",feedFollow)
+	return nil
+}
+
+func handlerFollowing(s *state, cmd command) error {
+	feeds ,err := s.db.GetFeedFollowsForUser(context.Background(),s.cfg.CurrentUserName)
+	if err!=nil{
+		return err
+	}
+	for _,feed := range feeds{
+		fmt.Printf(" -%s\n",feed.FeedName)		
+	}
 	return nil
 }

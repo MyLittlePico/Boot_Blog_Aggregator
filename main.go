@@ -82,5 +82,8 @@ func (c *commands)init(){
 	c.register("agg", handlerAgg)
 	c.register("addfeed", handlerAddFeed)
 	c.register("feeds", handlerGetFeedsInfo)
+	c.register("follow",  handlerFollow)
+	c.register("following",  handlerFollowing)
+
 }
 
