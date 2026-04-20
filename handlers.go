@@ -113,3 +113,16 @@ func handlerAddFeed(s *state, cmd command) error {
 	fmt.Printf("%+v\n", feed)
 	return nil
 }
+
+func handlerGetFeedsInfo(s *state, cmd command) error {
+	feeds, err := s.db.GetFeedsInfo(context.Background())
+	if err!= nil {
+		return fmt.Errorf("Getting feeds failed: %w",err)
+	}
+
+	for _, feed := range(feeds) {
+		fmt.Printf("-%s\n  -%s\n    -%s\n",feed.Name, feed.Url, feed.UserName.String)
+	}
+	
+	return nil
+}
