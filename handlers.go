@@ -82,3 +82,34 @@ func handlerAgg(s *state, cmd command) error {
 	fmt.Printf("%+v\n",feed)
 	return nil
 }
+
+
+func handlerAddFeed(s *state, cmd command) error {
+	ctx := context.Background()
+
+	if len(cmd.args) != 2 {
+		return fmt.Errorf("Wrong number of arguments")
+	}
+	
+	user, err := s.db.GetUser(ctx, s.cfg.CurrentUserName)
+	if err != nil {
+		return fmt.Errorf("user %s not exist",s.cfg.CurrentUserName)
+	}
+	
+
+	feed, err := s.db.CreateFeed(ctx, database.CreateFeedParams{
+	
+		ID        : uuid.New(),
+		CreatedAt : time.Now(),
+		UpdatedAt : time.Now(),
+		Name      : cmd.args[0],
+		Url       : cmd.args[1],
+		UserID    : user.ID,
+		} )
+	if err != nil {
+		return fmt.Errorf("Adding feed failed: %w",err)
+	}
+
+	fmt.Printf("%+v\n", feed)
+	return nil
+}

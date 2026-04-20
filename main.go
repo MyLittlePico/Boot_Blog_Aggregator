@@ -80,5 +80,6 @@ func (c *commands)init(){
 	c.register("reset", handlerReset)
 	c.register("users", handlerGetUsers)
 	c.register("agg", handlerAgg)
+	c.register("addfeed", handlerAddFeed)
 }
 
