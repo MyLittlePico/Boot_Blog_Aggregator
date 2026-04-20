@@ -74,29 +74,50 @@ func handlerGetUsers(s *state, cmd command) error {
 	return nil
 }
 
-func handlerAgg(s *state, cmd command) error {
-	feed, err := fetchFeed(context.Background(),"https://www.wagslane.dev/index.xml")
+func handlerAgg(s *state, cmd command ) error {
+	if len(cmd.args) != 1{
+		return fmt.Errorf("Wrong number of arguments")
+	}
+	timeBetweenRequests, err := time.ParseDuration(cmd.args[0])
+	if err != nil{
+		return err
+	}
+	ticker := time.NewTicker(timeBetweenRequests)
+	for ; ; <-ticker.C {
+		scrapeFeeds(s)
+	}
+}
+
+func scrapeFeeds(s *state) error{
+	ctx := context.Background()
+	feed, err := s.db.GetNextFeedToFetch(ctx)
+	if err != nil {
+		return err
+	}
+	err = s.db.MarkFeedFetched(ctx, feed.ID)
+
+	rssFeed, err := fetchFeed(ctx, feed.Url)
 	if err != nil{
 		return fmt.Errorf("Fetching feed failed: %w",err)
 	}
-	fmt.Printf("%+v\n",feed)
+	fmt.Printf("-%s\n",rssFeed.Channel.Title)
+	for _, item := range rssFeed.Channel.Item{
+		fmt.Printf("  -%s\n",item.Title)
+	}
 	return nil
 }
 
 
-func handlerAddFeed(s *state, cmd command) error {
+
+
+
+func handlerAddFeed(s *state, cmd command, user database.User) error {
 	ctx := context.Background()
 
 	if len(cmd.args) != 2 {
 		return fmt.Errorf("Wrong number of arguments")
 	}
 	
-	user, err := s.db.GetUser(ctx, s.cfg.CurrentUserName)
-	if err != nil {
-		return fmt.Errorf("user %s not exist",s.cfg.CurrentUserName)
-	}
-	
-
 	feed, err := s.db.CreateFeed(ctx, database.CreateFeedParams{
 	
 		ID        : uuid.New(),
@@ -135,15 +156,12 @@ func handlerGetFeedsInfo(s *state, cmd command) error {
 	return nil
 }
 
-func handlerFollow(s *state, cmd command) error {
+func handlerFollow(s *state, cmd command, user database.User) error {
 	ctx := context.Background()
 	if len(cmd.args) != 1 {
 		return fmt.Errorf("Wrong number of arguments")
 	}
-	user, err := s.db.GetUser(ctx, s.cfg.CurrentUserName)
-	if err != nil {
-		return err
-	}
+
 	feed, err := s.db.GetFeed(ctx, cmd.args[0])
 	if err != nil {
 		return err
@@ -160,8 +178,8 @@ func handlerFollow(s *state, cmd command) error {
 	return nil
 }
 
-func handlerFollowing(s *state, cmd command) error {
-	feeds ,err := s.db.GetFeedFollowsForUser(context.Background(),s.cfg.CurrentUserName)
+func handlerFollowing(s *state, cmd command, user database.User) error {
+	feeds ,err := s.db.GetFeedFollowsForUser(context.Background(),user.ID)
 	if err!=nil{
 		return err
 	}
@@ -169,4 +187,40 @@ func handlerFollowing(s *state, cmd command) error {
 		fmt.Printf(" -%s\n",feed.FeedName)		
 	}
 	return nil
+}
+
+func middlewareLoggedIn(handler func(s *state,cmd command, user database.User) error) func(*state, command) error{
+	return func(s *state, cmd command) error{
+		user, err := s.db.GetUser(context.Background(),s.cfg.CurrentUserName)
+		if err != nil{
+			return err
+		}
+		return handler(s, cmd, user)
+	}
+}
+
+func handlerUnfollow(s *state, cmd command, user database.User) error {
+	ctx := context.Background()
+	
+	if len(cmd.args) != 1{
+		return fmt.Errorf("Wrong number of arguments")
+	}
+	
+	feed, err := s.db.GetFeed(ctx, cmd.args[0])
+	if err != nil {
+		return err
+	}
+	
+	
+	err = s.db.Unfollow(ctx,database.UnfollowParams{
+		UserID : user.ID,
+		FeedID : feed.ID,
+	})
+	if err != nil {
+		return err
+	}
+
+	fmt.Printf("Unfollow %s",feed.Url)
+	return nil
+
 }

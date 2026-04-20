@@ -80,10 +80,10 @@ func (c *commands)init(){
 	c.register("reset", handlerReset)
 	c.register("users", handlerGetUsers)
 	c.register("agg", handlerAgg)
-	c.register("addfeed", handlerAddFeed)
+	c.register("addfeed", middlewareLoggedIn(handlerAddFeed))
 	c.register("feeds", handlerGetFeedsInfo)
-	c.register("follow",  handlerFollow)
-	c.register("following",  handlerFollowing)
-
+	c.register("follow",  middlewareLoggedIn(handlerFollow))
+	c.register("following",  middlewareLoggedIn(handlerFollowing))
+	c.register("unfollow", middlewareLoggedIn(handlerUnfollow))
 }
 
