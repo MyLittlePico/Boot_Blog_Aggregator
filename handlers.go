@@ -7,6 +7,8 @@ import (
 	"github.com/MyLittlePico/Blog_Aggregator/internal/database"
 	_ "github.com/lib/pq"
 	"time"
+	"strings"
+	"strconv"
 )
 
 func handlerLogin(s *state, cmd command) error {
@@ -100,15 +102,39 @@ func scrapeFeeds(s *state) error{
 	if err != nil{
 		return fmt.Errorf("Fetching feed failed: %w",err)
 	}
+
 	fmt.Printf("-%s\n",rssFeed.Channel.Title)
 	for _, item := range rssFeed.Channel.Item{
-		fmt.Printf("  -%s\n",item.Title)
+		layouts := []string{time.RFC1123Z, time.RFC1123, time.RFC3339}
+		
+		var parsedTime time.Time
+		for _, layout := range layouts{
+			parsedTime, err = time.Parse(layout ,item.PubDate)
+			if err == nil{
+				break
+			}
+		}
+		if err != nil {
+			return fmt.Errorf("unsupport time layout")
+		}
+		err = s.db.CreatePost(ctx,database.CreatePostParams{
+			ID			: uuid.New(),
+			Title     	: item.Title,
+			Url 		: item.Link,
+			Description : item.Description,
+			PublishedAt : parsedTime,
+			FeedID   	: feed.ID,
+			})
+		if err != nil{
+			if strings.Contains(err.Error(), "duplicate key value violates unique constraint") {
+				// ignore duplicate post
+			}else {
+				fmt.Printf("couldn't create post: %v", err)
+			}
+		} 
 	}
 	return nil
 }
-
-
-
 
 
 func handlerAddFeed(s *state, cmd command, user database.User) error {
@@ -223,4 +249,29 @@ func handlerUnfollow(s *state, cmd command, user database.User) error {
 	fmt.Printf("Unfollow %s",feed.Url)
 	return nil
 
+}
+
+func handlerBrowse(s *state, cmd command, user database.User) error {
+	limit := 2
+	var err error
+	if len(cmd.args) == 1{
+		limit, err = strconv.Atoi(cmd.args[0])
+		if err != nil{
+			return err
+		}
+	}
+	posts, err := s.db.GetPostsForUser(context.Background(), database.GetPostsForUserParams{
+		UserID : user.ID,
+		Limit  : int32(limit),
+	})
+	if err != nil{
+		return err
+	}
+	
+	for _, post := range posts {
+		fmt.Printf("-%s\n",post.Title)
+		fmt.Printf("  -%s\n",post.Description)
+
+	}
+	return nil
 }
