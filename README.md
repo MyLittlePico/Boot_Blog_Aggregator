@@ -1,62 +1,57 @@
-# gator
+# Gator
 
 a bolg aggregator written in go
 
-## Description
+## Installation
 
-An in-depth paragraph about your project and overview of use.
+Make sure you have the latest [Go toolchain](https://golang.org/dl/) installed as well as a local Postgres database. You can then install `gator` with:
 
-## Getting Started
-
-### Dependencies
-
-* Describe any prerequisites, libraries, OS version, etc., needed before installing program.
-* ex. Windows 10
-
-### Installing
-
-* How/where to download your program
-* Any modifications needed to be made to files/folders
-
-### Executing program
-
-* How to run the program
-* Step-by-step bullets
-```
-code blocks for commands
+```bash
+go install github.com/MyLittlePico/Boot_gator
 ```
 
-## Help
+## Config
 
-Any advise for common problems or issues.
+Create a `.gatorconfig.json` file in your home directory with the following structure:
+
+```json
+{
+  "db_url": "postgres://username:@localhost:5432/database?sslmode=disable"
+}
 ```
-command to run if program contains helper info
+
+Replace the values with your database connection string.
+
+## Usage
+
+Create a new user:
+
+```bash
+gator register <name>
 ```
 
-## Authors
+Add a feed:
 
-Contributors names and contact info
+```bash
+gator addfeed <url>
+```
 
-ex. Dominique Pizzie  
-ex. [@DomPizzie](https://twitter.com/dompizzie)
+Start the aggregator:
 
-## Version History
+```bash
+gator agg 30s
+```
 
-* 0.2
-    * Various bug fixes and optimizations
-    * See [commit change]() or See [release history]()
-* 0.1
-    * Initial Release
+View the posts:
 
-## License
+```bash
+gator browse [limit]
+```
 
-This project is licensed under the [NAME HERE] License - see the LICENSE.md file for details
+There are a few other commands you'll need as well:
 
-## Acknowledgments
-
-Inspiration, code snippets, etc.
-* [awesome-readme](https://github.com/matiassingers/awesome-readme)
-* [PurpleBooth](https://gist.github.com/PurpleBooth/109311bb0361f32d87a2)
-* [dbader](https://github.com/dbader/readme-template)
-* [zenorocha](https://gist.github.com/zenorocha/4526327)
-* [fvcproductions](https://gist.github.com/fvcproductions/1bfc2d4aecb01a834b46)
+- `gator login <name>` - Log in as a user that already exists
+- `gator users` - List all users
+- `gator feeds` - List all feeds
+- `gator follow <url>` - Follow a feed that already exists in the database
+- `gator unfollow <url>` - Unfollow a feed that already exists in the database
